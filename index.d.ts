@@ -1,1 +1,1 @@
-export const encode = (_: string): Uint8Array => { };
+export function encode(_: string): Uint8Array;
