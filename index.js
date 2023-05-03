@@ -1,3 +1,8 @@
+/**
+ * Encode a string to UTF-8 bytes.
+ * @param {string} s - The string to encode.
+ * @returns {Uint8Array} Bytes containing the UTF-8 encoding of the string.
+ */
 export const encode = (s) => new Uint8Array([...s].map(c => c.codePointAt(0)).flatMap(x => {
     if (x < 0x80) {
         // first 128 code points need 1 byte

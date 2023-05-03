@@ -20,7 +20,7 @@ pnpm add @haribala/text-encoder-utf-8
 ```
 Then import `encode` which takes a `string` and returns a `Uint8array`
 ```js
-import { encode } from './index.js';
+import { encode } from '@haribala/text-encoder-utf-8';
 
 const bytes = encode(s);
 ```
