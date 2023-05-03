@@ -1,0 +1,1 @@
+export const encode = (_: string): Uint8Array => { };
