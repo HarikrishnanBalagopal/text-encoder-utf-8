@@ -1,5 +1,7 @@
 import { encode, decode } from './index.js';
 
+const REPL_CHAR = '\uFFFD';
+
 test('encode-and-decode', () => {
     const testCases = [
         '$£Иह€한𐍈',
@@ -31,8 +33,9 @@ test('utf-8-broken-beginning', () => {
         0x80, 0x80, 0x80, // continuation byte x 3
         ...Array.from(textEnc.encode(s)),
     ]);
-    expect(textDec.decode(arr)).toBe('\uFFFD\uFFFD\uFFFD' + s);
-    expect(decode(arr)).toBe(s);
+    const expected = REPL_CHAR + REPL_CHAR + REPL_CHAR + s;
+    expect(textDec.decode(arr)).toBe(expected);
+    expect(decode(arr)).toBe(expected);
 });
 
 test('utf-8-broken-beginning-invalid-continuation-byte', () => {
@@ -43,7 +46,7 @@ test('utf-8-broken-beginning-invalid-continuation-byte', () => {
         0x80, 0xFF, 0x80, // continuation byte, invalid byte, continuation byte
         ...Array.from(textEnc.encode(s)),
     ]);
-    expect(textDec.decode(arr)).toBe('\uFFFD\uFFFD\uFFFD' + s);
+    expect(textDec.decode(arr)).toBe(REPL_CHAR + REPL_CHAR + REPL_CHAR + s);
     expect(() => decode(arr)).toThrow('invalid utf-8. Expected a leading byte at index 1 actual ff');
 });
 
@@ -55,7 +58,7 @@ test('utf-8-broken-beginning-too-many-continuation-bytes', () => {
         0x80, 0x80, 0x80, 0x80, // continuation byte x 4
         ...Array.from(textEnc.encode(s)),
     ]);
-    expect(textDec.decode(arr)).toBe('\uFFFD\uFFFD\uFFFD\uFFFD' + s);
+    expect(textDec.decode(arr)).toBe(REPL_CHAR + REPL_CHAR + REPL_CHAR + REPL_CHAR + s);
     expect(() => decode(arr)).toThrow('invalid utf-8. Expected a leading byte at index 3 actual 80');
 });
 
@@ -67,7 +70,7 @@ test('utf-8-broken-beginning-invalid-leading-byte', () => {
         0x80, 0x80, 0x80, 0xFF, // continuation byte x 4
         ...Array.from(textEnc.encode(s)),
     ]);
-    expect(textDec.decode(arr)).toBe('\uFFFD\uFFFD\uFFFD\uFFFD' + s);
+    expect(textDec.decode(arr)).toBe(REPL_CHAR + REPL_CHAR + REPL_CHAR + REPL_CHAR + s);
     expect(() => decode(arr)).toThrow('invalid utf-8. Expected a leading byte at index 3 actual ff');
 });
 
@@ -79,9 +82,11 @@ test('utf-8-broken-ending-partial-multi-byte-character', () => {
         0x80, 0x80, 0x80, // continuation byte x 4
         ...Array.from(textEnc.encode(s)),
         0xF0,
+        0x80,
     ]);
-    expect(textDec.decode(arr)).toBe('\uFFFD\uFFFD\uFFFD' + s + '\uFFFD');
-    expect(decode(arr)).toBe(s);
+    const expected = REPL_CHAR + REPL_CHAR + REPL_CHAR + s + REPL_CHAR + REPL_CHAR;
+    expect(textDec.decode(arr)).toBe(expected);
+    expect(decode(arr)).toBe(expected);
 });
 
 test('utf-8-broken-middle-invalid-character', () => {
@@ -94,7 +99,7 @@ test('utf-8-broken-middle-invalid-character', () => {
         0xFF,
         ...Array.from(textEnc.encode(s)),
     ]);
-    expect(textDec.decode(arr)).toBe('\uFFFD\uFFFD\uFFFD' + s + '\uFFFD' + s);
+    expect(textDec.decode(arr)).toBe(REPL_CHAR + REPL_CHAR + REPL_CHAR + s + REPL_CHAR + s);
     expect(() => decode(arr)).toThrow('invalid utf-8. Expected a leading byte at index 56 actual ff');
 });
 
@@ -109,7 +114,7 @@ test('utf-8-broken-middle-invalid-4-byte-character-not-continuation-byte', () =>
         0x80,
         ...Array.from(textEnc.encode(s)),
     ]);
-    expect(textDec.decode(arr)).toBe('\uFFFD\uFFFD\uFFFD' + s + '\uFFFD\uFFFD' + s);
+    expect(textDec.decode(arr)).toBe(REPL_CHAR + REPL_CHAR + REPL_CHAR + s + REPL_CHAR + REPL_CHAR + s);
     expect(() => decode(arr)).toThrow('invalid utf-8. Expected a continuation byte at index 58 actual 61');
 });
 
@@ -124,6 +129,6 @@ test('utf-8-broken-middle-invalid-2-byte-character-out-of-range', () => {
         0x80,
         ...Array.from(textEnc.encode(s)),
     ]);
-    expect(textDec.decode(arr)).toBe('\uFFFD\uFFFD\uFFFD' + s + '\uFFFD\uFFFD' + s);
+    expect(textDec.decode(arr)).toBe(REPL_CHAR + REPL_CHAR + REPL_CHAR + s + REPL_CHAR + REPL_CHAR + s);
     expect(() => decode(arr)).toThrow('invalid utf-8. Expected an integer between 0x80 and 0x800 at index 56 actual 0');
 });

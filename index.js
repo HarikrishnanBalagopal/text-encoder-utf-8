@@ -29,18 +29,22 @@ export const encode = (s) => new Uint8Array([...s].map(c => c.codePointAt(0)).fl
  * Decode UTF-8 bytes into a string.
  * Will throw an error if the input is not valid UTF-8 bytes.
  * If there are 3 or less continuation bytes at the beginning of the string
- * they will be ignored. Similarly if a 2,3,4 byte character overflows the end
- * of the string it will also be ignored.
+ * they will be replace with \uFFFD. Similarly if a 2, 3 or 4 byte character overflows the end
+ * of the string, then those bytes will also be replaced with \uFFFD.
  * @param {Uint8Array} arr - Bytes containing the UTF-8 encoding of the string.
  * @returns {string} The decoded string.
  */
 export const decode = (arr) => {
+    const REPL_CHAR = 0xFFFD;
     const hex = x => x.toString(16).padStart(2, '0');
     const xs = Array.from(arr);
     const res = [];
     let i = 0;
-    while (i < xs.length && i < 3 && xs[i] && (xs[i] & 0xC0) === 0x80) i++;
-    if (i >= xs.length) return '';
+    while (i < xs.length && i < 3 && xs[i] && (xs[i] & 0xC0) === 0x80) {
+        res.push(REPL_CHAR); // replacement for continuation byte
+        i++;
+    }
+    if (i >= xs.length) return String.fromCodePoint(...res);
     if (!(
         ((xs[i] & 0x80) === 0) || // 1 byte
         ((xs[i] & 0xE0) === 0xC0) || // 2 byte
@@ -58,7 +62,10 @@ export const decode = (arr) => {
         }
         if ((x & 0xE0) === 0xC0) {
             // 2 byte
-            if (i + 1 >= xs.length) break;
+            if (i + 1 >= xs.length) {
+                res.push(REPL_CHAR); // replacement for 1st byte, 2nd byte is past end of string
+                break;
+            }
             const x1 = xs[i + 1];
             if ((x1 & 0xC0) !== 0x80) {
                 throw new Error(`invalid utf-8. Expected a continuation byte at index ${i + 1} actual ${hex(x1)}`);
@@ -73,7 +80,11 @@ export const decode = (arr) => {
         }
         if ((x & 0xF0) === 0xE0) {
             // 3 byte
-            if (i + 2 >= xs.length) break;
+            if (i + 2 >= xs.length) {
+                res.push(REPL_CHAR); // replacement for 1st byte
+                if (i + 1 < xs.length) res.push(REPL_CHAR); // replacement for 2nd byte, 3rd byte is past end of string
+                break;
+            }
             const x1 = xs[i + 1];
             if ((x1 & 0xC0) !== 0x80) {
                 throw new Error(`invalid utf-8. Expected a continuation byte at index ${i + 1} actual ${hex(x1)}`);
@@ -92,7 +103,12 @@ export const decode = (arr) => {
         }
         if ((x & 0xF8) === 0xF0) {
             // 4 byte
-            if (i + 3 >= xs.length) break;
+            if (i + 3 >= xs.length) {
+                res.push(REPL_CHAR); // replacement for 1st byte
+                if (i + 1 < xs.length) res.push(REPL_CHAR); // replacement for 2nd byte
+                if (i + 2 < xs.length) res.push(REPL_CHAR); // replacement for 3rd byte, 4th byte is past end of string
+                break;
+            }
             const x1 = xs[i + 1];
             if ((x1 & 0xC0) !== 0x80) {
                 throw new Error(`invalid utf-8. Expected a continuation byte at index ${i + 1} actual ${hex(x1)}`);
